@@ -13,7 +13,7 @@
 #    include <unistd.h>
 #endif
 #include <cstdlib>
-#include <cstdio>
+#include <stdio.h>
 #include <cstring>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -111,7 +111,7 @@ namespace log4cpp {
                     return; // fail silently                    
                 }
             }
-            _ipAddr = (struct in_addr*)pent->h_addr;
+            _ipAddr = *(in_addr_t*)(pent->h_addr); // fixed bug #1579890
         }
         // Get a datagram socket.
         
@@ -137,20 +137,14 @@ namespace log4cpp {
         size_t messageLength = message.length();
         char *buf = new char [messageLength + 16];
         int priority = _facility + toSyslogPriority(event.priority);
-        int preambleLength = std::sprintf (buf, "<%d>", priority);
+        int preambleLength = sprintf (buf, "<%d>", priority);
         memcpy (buf + preambleLength, message.data(), messageLength);
 
         sockaddr_in sain;
         sain.sin_family = AF_INET;
         sain.sin_port   = htons (_portNumber);
-
-        if (_ipAddr == NULL)
-        {
-            return;    // Fail silently
-        }
-        
         // NO, do NOT use htonl on _ipAddr. Is already in network order.
-        sain.sin_addr.s_addr = _ipAddr->s_addr;
+        sain.sin_addr.s_addr = _ipAddr;
 
         while (messageLength > 0) {
             /* if packet larger than maximum (900 bytes), split

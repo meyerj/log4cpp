@@ -274,6 +274,7 @@ namespace log4cpp {
                 appender->setThreshold(Priority::getPriorityValue(thresholdName));
             }
         } catch(std::invalid_argument& e) {
+	    delete appender;	// fix for #3109495
             throw ConfigureFailure(std::string(e.what()) + 
                 " for threshold of appender '" + appenderName + "'");
         }
